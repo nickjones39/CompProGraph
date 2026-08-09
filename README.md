@@ -285,11 +285,18 @@ python benchmark_compprograph.py \
 ```
 
 > **Non-PROV sidecars.** A corpus directory may contain files that are valid JSON
-> but not PROV-JSON documents — AgentDojo-PROV ships a `*.transcript.json` next to
-> every graph plus a `manifest.json`. These are excluded from corpus discovery by
-> `compprograph_compress.is_corpus_prov_file()`, used by both the codec and the
-> benchmark, so byte counts and the compressed set always agree. OpenML corpora
-> contain no such files, so this is a no-op there.
+> but not PROV-JSON documents. AgentDojo-PROV ships a `*.transcript.json` next to
+> every graph plus a `manifest.json` and a `checksums.sha256`; OpenML-CC18 ships a
+> `corpus_manifest.json` at the corpus root (all four sizes) and a
+> `conformance_report.json` (light corpus). All are excluded from corpus discovery
+> by `compprograph_compress.is_corpus_prov_file()`, used by both the codec and the
+> benchmark, so byte counts and the compressed set always agree.
+>
+> Including one by mistake does not break losslessness — the generic fallback
+> round-trips a manifest exactly like any other JSON object — but it does distort
+> the measurement, because a one-off manifest has no redundancy to share and
+> *expands* under the codec. If you add a corpus, enumerate its non-graph JSON
+> files and extend `NON_PROV_BASENAMES`.
 
 Useful flags: `--output DIR` (results/tables/figures destination), `--work-dir
 DIR` (intermediate files; default is a temp dir), `--skip-figures`.

@@ -493,13 +493,29 @@ def decompress_doc(view: Any, ctx: Dict[str, Any]) -> Any:
 # =============================================================================
 
 # Sidecar files that live inside a corpus tree but are NOT PROV-JSON documents
-# and must be skipped during corpus discovery. The AgentDojo-PROV corpora ship a
-# `manifest.json` index, a `checksums.sha256`, and a `<name>.transcript.json`
-# (schema "transcript/v1") next to every PROV graph; only the PROV graphs are
-# compressed. (OpenML-CC18 corpora contain none of these, so this is a no-op
-# there.) Excluding by name keeps file discovery and the byte/round-trip
-# accounting consistent everywhere they are used.
-NON_PROV_BASENAMES = {"manifest.json", "checksums.sha256"}
+# and must be skipped during corpus discovery. Both evaluation corpora ship them:
+#
+#   AgentDojo-PROV : `manifest.json` (index), `checksums.sha256`, and a
+#                    `<name>.transcript.json` (schema "transcript/v1") next to
+#                    every PROV graph.
+#   OpenML-CC18    : `corpus_manifest.json` at the corpus root (all four sizes)
+#                    and `conformance_report.json` (light corpus).
+#
+# Excluding by name keeps file discovery and the byte/round-trip accounting
+# consistent everywhere they are used. Getting this wrong is not a correctness
+# bug -- the generic fallback round-trips a manifest losslessly like any other
+# JSON object -- but it silently pollutes the measured corpus: the OpenML
+# sidecars are one-off structures with no redundancy to share, so they *inflate*
+# under the codec (1,641 bytes in -> 4,115 bytes out on the light corpus) and
+# drag the reported reduction down (72.7% -> 72.5%). They also inflate the
+# document count, which is why the light corpus reported 74 documents for a
+# 72-task CC18 suite.
+NON_PROV_BASENAMES = {
+    "manifest.json",           # AgentDojo-PROV per-model index
+    "checksums.sha256",        # AgentDojo-PROV integrity file
+    "corpus_manifest.json",    # OpenML-CC18 corpus root manifest
+    "conformance_report.json", # OpenML-CC18 PROV conformance summary
+}
 NON_PROV_SUFFIXES = (".transcript.json",)
 
 

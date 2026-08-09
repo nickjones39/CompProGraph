@@ -29,6 +29,7 @@ Or under pytest:                            pytest test_generic_provjson.py
 """
 import glob
 import json
+import os
 import sys
 
 import compprograph_compress as cpg
@@ -294,22 +295,47 @@ def test_marker_named_keys_do_not_collide():
 
 
 def test_non_prov_sidecars_excluded():
-    """AgentDojo-PROV ships non-PROV sidecars (transcripts, manifest) next to the
-    graphs; the shared discovery predicate must skip them so the codec and the
-    benchmark agree on exactly which files are compressed."""
+    """Both corpora ship non-PROV sidecars next to the graphs; the shared discovery
+    predicate must skip them so the codec and the benchmark agree on exactly which
+    files are compressed.
+
+    AgentDojo-PROV ships transcripts, a manifest and a checksums file. OpenML-CC18
+    ships `corpus_manifest.json` (every size) and `conformance_report.json` (light).
+    The OpenML pair was missed originally: the sidecars were compressed as if they
+    were PROV documents, which inflated the document count (74 for a 72-task suite)
+    and *lowered* the reported reduction, because a one-off manifest has no
+    redundancy to share and expands under the codec."""
     assert cpg.is_corpus_prov_file("x/prov/benign/task.json") is True
     assert cpg.is_corpus_prov_file("x/prov/benign/task.transcript.json") is False
     assert cpg.is_corpus_prov_file("x/manifest.json") is False
     assert cpg.is_corpus_prov_file("x/checksums.sha256") is False
+    # OpenML-CC18 sidecars
+    assert cpg.is_corpus_prov_file("x/corpus_manifest.json") is False
+    assert cpg.is_corpus_prov_file("x/conformance_report.json") is False
+    # A graph whose name merely *contains* a sidecar name must still be kept.
+    assert cpg.is_corpus_prov_file("x/task_1/my_corpus_manifest.json") is True
+    assert cpg.is_corpus_prov_file("x/task_1/prov_manifest.json") is True
+
     # And discovery on a real AgentDojo tree (if present) yields no sidecars.
     roots = [g for g in AGENTDOJO_ROOTS if glob.glob(g + "/prov/**/*.json", recursive=True)]
     if not roots:
-        print("  (sidecar discovery check skipped: no AgentDojo corpus present)")
+        print("  (AgentDojo sidecar discovery check skipped: no corpus present)")
+    else:
+        found = cpg.find_json_files_recursive(roots[0])
+        assert found, "expected to discover AgentDojo PROV graphs"
+        assert not any(p.endswith(".transcript.json") or p.endswith("manifest.json")
+                       for p in found), \
+            "a non-PROV sidecar leaked into corpus discovery"
+
+    # Same on a real OpenML tree: 72 CC18 tasks means 72 discovered graphs, not 74.
+    if not os.path.isdir("prov_corpus_light"):
+        print("  (OpenML sidecar discovery check skipped: no corpus present)")
         return
-    found = cpg.find_json_files_recursive(roots[0])
-    assert found, "expected to discover AgentDojo PROV graphs"
-    assert not any(p.endswith(".transcript.json") or p.endswith("manifest.json") for p in found), \
-        "a non-PROV sidecar leaked into corpus discovery"
+    found = cpg.find_json_files_recursive("prov_corpus_light")
+    assert found, "expected to discover OpenML PROV graphs"
+    leaked = [p for p in found
+              if os.path.basename(p) in ("corpus_manifest.json", "conformance_report.json")]
+    assert not leaked, f"OpenML sidecar leaked into corpus discovery: {leaked}"
 
 
 def test_agentdojo_corpus_doc_not_regressed():
