@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "CompProGraph: Lossless Graph Compression for W3C PROV-JSON Corpora"
+type: software
+version: "1.0.0"
+date-released: "2026-06-12"
+url: "https://github.com/nickjones39/CompProGraph"
+license: MIT
+abstract: >
+  CompProGraph is a lossless, single-pass compression framework for W3C PROV-JSON
+  provenance graph corpora. It combines structural signature hashing (supernode
+  templates with columnar edge encoding) and corpus-wide dictionary encoding to
+  achieve ~72.5% storage reduction while guaranteeing exact canonical-JSON
+  round-trip reconstruction. Evaluated on the OpenML-CC18 benchmark corpus as
+  part of research into provenance-based cybersecurity for LLMs.
+authors:
+  - family-names: Jones
+    given-names: Nicholas
+    affiliation: "Centre for Artificial Intelligence Research and Optimisation (AIRO), Torrens University Australia"
+    email: nicholas.jones1@student.torrens.edu.au
+    orcid: "https://orcid.org/0009-0000-2264-9490"
+  - family-names: Whaiduzzaman
+    given-names: Md
+    affiliation: "Centre for Artificial Intelligence Research and Optimisation (AIRO), Torrens University Australia"
+    email: md.whaiduzzaman@torrens.edu.au
+  - family-names: Jan
+    given-names: Tony
+    affiliation: "Centre for Artificial Intelligence Research and Optimisation (AIRO), Torrens University Australia"
+    email: tony.jan@torrens.edu.au
+keywords:
+  - provenance
+  - graph compression
+  - PROV-JSON
+  - W3C PROV
+  - lossless compression
+  - LLM security
+  - cybersecurity
+  - OpenML
+  - Python
+repository-code: "https://github.com/nickjones39/CompProGraph"
+doi: "10.5281/zenodo.20651570"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.20651570"
+    description: "Concept DOI (always resolves to latest version)"
+  - type: doi
+    value: "10.5281/zenodo.20651569"
+    description: "Version DOI for v1.0.0"

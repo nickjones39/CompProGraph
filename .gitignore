@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------------------
+# CompProGraph -- lossless structural codec for PROV-JSON provenance corpora.
+#
+# The evaluation corpora and the benchmark output are large (~4.6 GB together)
+# and are released separately as data artifacts, not through git. They are
+# expected to sit alongside the codec in this directory when benchmarking.
+# ---------------------------------------------------------------------------
+
+# Evaluation corpora -- local only, never committed
+corpus-prov/
+prov_corpus_light/
+prov_corpus_scaled/
+prov_corpus_large/
+prov_corpus_full/
+
+# Benchmark results, compressed artifacts, and round-trip scratch
+results/
+out_*/
+reconstructed_*/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Editors / tooling
+.vscode/
+.idea/
+.claude/
+CLAUDE.md
+
+# macOS junk (AppleDouble sidecars + Finder metadata). Never commit these.
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.fseventsd
+__MACOSX/
+Icon?
