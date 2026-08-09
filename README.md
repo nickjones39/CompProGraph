@@ -294,6 +294,16 @@ python benchmark_compprograph.py \
 Useful flags: `--output DIR` (results/tables/figures destination), `--work-dir
 DIR` (intermediate files; default is a temp dir), `--skip-figures`.
 
+> **Windows: keep `--work-dir` short.** Compression mirrors the input tree under
+> `<work-dir>/<corpus>_struct/compressed_graphs/`, so the output path is the input's
+> relative path plus ~43 characters. The deepest relative path in the OpenML corpora
+> is 82 characters (`prov_corpus_full`), which leaves **135 characters** for the
+> work-dir before hitting Windows' 260-character `MAX_PATH` — at which point the run
+> dies with `FileNotFoundError` partway through, not with a clear error. The default
+> temp dir is short enough; a hand-picked nested one may not be. Either pass
+> something like `--work-dir C:/cpgbench` or enable `LongPathsEnabled`. Not an issue
+> on Linux/macOS.
+
 Expected output (light corpus):
 
 ```
