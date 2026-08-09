@@ -60,7 +60,7 @@ import shutil
 import gc
 import tempfile
 from dataclasses import dataclass, asdict
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 
 import compprograph_compress as compress_mod
@@ -495,15 +495,27 @@ def generate_latex_table(results: List[BenchmarkResult], output_dir: str):
     print(f"Generated LaTeX tables in: {output_dir}")
 
 
-def save_results_json(results: List[BenchmarkResult], output_dir: str):
+def save_results_json(results: List[BenchmarkResult], output_dir: str,
+                      failures: Optional[List[Tuple[str, str]]] = None):
+    """Persist the results.
+
+    `complete` is False whenever any requested corpus failed. Consumers that
+    plot or quote these numbers should refuse a file with `complete: false` --
+    a partial run's rows look completely normal on their own, so this flag is
+    the only in-band way to tell that corpora are missing.
+    """
+    failures = failures or []
     data = {
         'benchmark_date': time.strftime('%Y-%m-%d %H:%M:%S'),
         'reduction_definition': '(1 - compressed_bytes / original_bytes) * 100',
+        'complete': not failures,
+        'failed_corpora': [{'corpus': n, 'error': e} for n, e in failures],
         'results': [asdict(r) for r in results],
     }
     with open(os.path.join(output_dir, 'benchmark_results.json'), 'w') as f:
         json.dump(data, f, indent=2)
-    print(f"Saved raw results to: {os.path.join(output_dir, 'benchmark_results.json')}")
+    label = "" if not failures else "  (PARTIAL -- see failed_corpora)"
+    print(f"Saved raw results to: {os.path.join(output_dir, 'benchmark_results.json')}{label}")
 
 
 # =============================================================================
@@ -536,21 +548,39 @@ Examples:
     args = parser.parse_args()
 
     corpus_paths: List[Tuple[str, str]] = []
+    # Anything that stops a requested corpus from being measured is a failure and
+    # must reach the exit code. Silently skipping one produces a "successful" run
+    # whose results file is missing a corpus -- which is exactly how a figure gets
+    # regenerated with rows quietly absent.
+    failures: List[Tuple[str, str]] = []
+
     if args.corpus_dir:
         base = Path(args.corpus_dir)
         for mode in ['light', 'scaled', 'large', 'full']:
             p = base / f'prov_corpus_{mode}'
             if p.exists():
                 corpus_paths.append((str(p), f'prov_corpus_{mode}'))
+        # --corpus-dir is discovery, not a request for specific corpora, so a
+        # mode that simply isn't there is not an error.
     if args.corpus:
         for cp in args.corpus:
+            name = os.path.basename(cp.rstrip('/\\')) or cp
             if os.path.exists(cp):
-                corpus_paths.append((cp, os.path.basename(cp.rstrip('/'))))
+                corpus_paths.append((cp, name))
+            else:
+                # An explicitly requested --corpus that does not exist is a typo
+                # or a missing dataset, never something to shrug off.
+                print(f"Error: --corpus path does not exist: {cp}")
+                failures.append((name, f"path does not exist: {cp}"))
 
     if not corpus_paths:
         print("Error: No corpus directories found.")
         print("Use --corpus-dir <dir with prov_corpus_* subdirs> or --corpus <dir>.")
         sys.exit(1)
+
+    # Total requested = the ones we can attempt, plus the ones already rejected
+    # above for not existing (those never make it into corpus_paths).
+    n_requested = len(corpus_paths) + len(failures)
 
     print(f"Found {len(corpus_paths)} corpus directories to benchmark:")
     for path, name in corpus_paths:
@@ -563,20 +593,35 @@ Examples:
     results: List[BenchmarkResult] = []
     for corpus_path, mode_name in corpus_paths:
         try:
-            results.append(run_full_benchmark(corpus_path, work_dir, mode_name))
+            r = run_full_benchmark(corpus_path, work_dir, mode_name)
         except Exception as e:
             print(f"Error benchmarking {mode_name}: {e}")
             import traceback
             traceback.print_exc()
+            failures.append((mode_name, f"{type(e).__name__}: {e}"))
+            continue
+        # A corpus that ran but did not reconstruct exactly is a failure too --
+        # losslessness is the whole claim, so it must never exit 0.
+        if not r.struct_lossless or r.struct_roundtrip_failures:
+            failures.append((mode_name,
+                             f"NOT LOSSLESS: {r.struct_roundtrip_failures} round-trip failure(s)"))
+        results.append(r)
 
     if not results:
         print("No successful benchmark results.")
         sys.exit(1)
 
     if args.pooled_name and len(results) > 1:
-        results.append(make_pooled_result(results, args.pooled_name))
+        if failures:
+            # Pooling a subset and labelling it with the full-corpus name would
+            # silently understate the corpus -- refuse rather than mislead.
+            print(f"\nSkipping the pooled row '{args.pooled_name}': "
+                  f"{len(failures)} corpus/corpora failed, so a pooled total would "
+                  f"cover only part of the corpus and be misleading.")
+        else:
+            results.append(make_pooled_result(results, args.pooled_name))
 
-    save_results_json(results, args.output)
+    save_results_json(results, args.output, failures)
     generate_latex_table(results, args.output)
     if not args.skip_figures:
         try:
@@ -604,6 +649,24 @@ Examples:
     print("      applied to the structural output pushes total lossless reduction")
     print("      higher (~96-97% on light) -- see the limitations discussion.")
     print(f"\nResults saved to: {args.output}/")
+
+    if failures:
+        print("\n" + "!" * 80)
+        print(f"BENCHMARK FAILED: {len(failures)} of {n_requested} "
+              f"requested corpora did not complete")
+        print("!" * 80)
+        for name, err in failures:
+            print(f"  {name}: {err}")
+        missing = len(results) < n_requested
+        print("\nThe results file is marked \"complete\": false.")
+        if missing:
+            print("Rows are MISSING from it, and a short results file looks entirely")
+            print("normal to anything reading it.")
+        else:
+            print("Every row is present, but at least one did not reconstruct exactly,")
+            print("so the numbers do not describe a lossless codec.")
+        print("Do NOT regenerate figures or quote numbers from this run.")
+        sys.exit(1)
 
 
 if __name__ == '__main__':

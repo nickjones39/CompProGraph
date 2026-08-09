@@ -301,6 +301,16 @@ python benchmark_compprograph.py \
 Useful flags: `--output DIR` (results/tables/figures destination), `--work-dir
 DIR` (intermediate files; default is a temp dir), `--skip-figures`.
 
+**Exit status.** The harness exits **non-zero if any requested corpus fails** —
+whether it crashed, was named with `--corpus` but does not exist, or ran but did
+not reconstruct exactly. It still writes `benchmark_results.json` (a partial file
+is useful for diagnosis) but marks it `"complete": false` and lists what went
+wrong under `failed_corpora`, and it refuses to emit a `--pooled-name` row, since
+pooling the survivors would understate the corpus while carrying the full
+corpus's label. **Check the exit code before using a results file**: a run that
+lost a corpus produces a shorter file that otherwise looks entirely normal, which
+is how a figure ends up silently missing rows.
+
 > **Windows: keep `--work-dir` short.** Compression mirrors the input tree under
 > `<work-dir>/<corpus>_struct/compressed_graphs/`, so the output path is the input's
 > relative path plus ~43 characters. The deepest relative path in the OpenML corpora
