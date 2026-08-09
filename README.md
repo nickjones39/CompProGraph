@@ -41,7 +41,7 @@ removal.
 | Repository | Contents |
 |------------|----------|
 | **`nickjones39/CompProGraph`** (this repo, public) | The **codec and the evaluation harness**: compress, decompress, verify, round-trip tests, and the benchmark that produces the reported numbers. |
-| **`nickjones39/CompProGraph-manuscript`** (private) | The **paper and its toolchain**: the IEEE TAI manuscript (`TAI_template.tex`, `references.bib`, figures), the plain-language technical companion, and the figure scripts (`make_figures.py`, `make_concept_figures.py`). |
+| **`nickjones39/CompProGraph-manuscript`** (private) | The **paper and its toolchain**: the IEEE TAI manuscript (`TAI_template.tex`, `references.bib`, figures) and the figure scripts (`make_figures.py`, `make_concept_figures.py`). |
 
 The division of labour is deliberate: every benchmark number quoted in the paper
 is produced *here*, by `benchmark_compprograph.py`; the manuscript repo only
@@ -298,7 +298,7 @@ Expected output (light corpus):
 
 ```
 Mode        Input(MB)  Struct(MB)  Reduction%  vsMinify%  Lossless
-light            2.37       0.650        72.5       66.4       yes
+Light            2.37       0.651        72.5       66.4       yes
 ```
 
 The **manuscript** figures are not generated here: they are produced in the
@@ -342,11 +342,21 @@ still lossless, just compressed less aggressively. The exact relation schema use
 to encode a corpus is stored inside the artifact, so artifacts keep decoding even
 if the schema table later changes.
 
-> **On the compression *ratio*.** The headline ~72% is specific to the
-> OpenML-CC18 provenance corpora the codec was tuned on (which use plain-string
-> edge fields and a fixed set of attributes). Other PROV-JSON will still compress
-> — primarily via the string dictionary and node templates — but the exact ratio
-> depends on the corpus's redundancy. Correctness (losslessness) does not.
+> **On the compression *ratio*.** The two headline figures — ~72% on OpenML-CC18,
+> ~68% on AgentDojo-PROV — come from **the same codec with no per-corpus tuning**,
+> and each is specific to that corpus's redundancy. OpenML-CC18 is the corpus the
+> codec was *developed against* (plain-string edge fields, a fixed attribute set),
+> which is why it compresses best; AgentDojo-PROV was added later and run
+> unchanged. Other PROV-JSON will still compress — primarily via the string
+> dictionary and node templates — but expect a different ratio. Correctness
+> (losslessness) does not vary.
+>
+> "No per-corpus tuning" is a measured claim, not a slogan: specialising
+> `VOLATILE_ATTR_KEYS` *for* AgentDojo — moving its per-instance `adprov:`
+> attributes (`content_hash`, `content_len`, `args`) into the residual set —
+> **lowers** the pooled ratio from 67.6% to 66.2%, because full-record template
+> interning already de-duplicates them while residuals are paid per node. The
+> generic codec wins, so it is left generic.
 
 The unit of work is a PROV-JSON *document*, which per the spec is always a JSON
 object; a bare top-level scalar or array is out of scope.
