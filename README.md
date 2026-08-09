@@ -19,7 +19,7 @@ It is evaluated on two corpora with **one codec and no per-corpus tuning**:
   Qwen-2.5-72B, GLM-4.6): **≈68% size reduction** (66.6–68.6% per model; 67.6%
   pooled), **verified lossless, 0 round-trip failures**.
 - **OpenML-CC18** — machine-learning provenance used to stress-test scaling:
-  **≈72% size reduction** (72.5% on the *light* corpus, 72.0–72.3% across the
+  **≈72% size reduction** (72.7% on the *light* corpus, 72.1–72.4% across the
   larger corpora, holding to 2.5 GB), **verified lossless, 0 failures**.
 
 In both cases this is versus the original pretty-printed JSON. For reference,
@@ -91,7 +91,7 @@ dictionary encoding, so any valid PROV-JSON document round-trips exactly — see
 | `test_generic_provjson.py` | Round-trip tests on spec-style W3C PROV-JSON (typed literals, all relation types, bundles) + an OpenML non-regression check. |
 | `LICENSE`, `CITATION.cff`, `.zenodo.json` | Software-release metadata for the archived version (see [Citation](#citation)). |
 | `corpus-prov/<model>/` | **AgentDojo-PROV** — real LLM-agent provenance, six models (`prov-deepseek-chat`, `prov-gpt-5-nano`, `google_gemini-2.5-flash`, `meta-llama_llama-3.3-70b-instruct`, `qwen_qwen-2.5-72b-instruct`, `z-ai_glm-4.6`; 2,944 PROV graphs each under `prov/`). Each graph ships next to a `*.transcript.json` and a `manifest.json` that are **not** PROV-JSON and are skipped automatically (see below). *Local only — see [Corpora](#corpora).* |
-| `prov_corpus_light/` | Small OpenML sample corpus (74 docs) — good for quick tests. *Local only.* |
+| `prov_corpus_light/` | Small OpenML sample corpus (72 PROV graphs, one per CC18 task) — good for quick tests. *Local only.* |
 | `prov_corpus_scaled/`, `prov_corpus_large/`, `prov_corpus_full/` | Larger OpenML corpora for scaling experiments. *Local only.* |
 | `results/` | Benchmark output (`benchmark_results.json`, LaTeX tables, figures). *Generated, not tracked.* |
 
@@ -112,7 +112,7 @@ take a directory of PROV-JSON documents, so you can point them at your own
 corpus and get the same guarantees (the *ratio* will depend on your data — see
 [Compatibility](#compatibility)).
 
-For OpenML development work use `prov_corpus_light` (74 docs). The
+For OpenML development work use `prov_corpus_light` (72 graphs). The
 `prov_corpus_{scaled,large,full}` corpora exist only for the scaling experiments
 and are slow to run; the six AgentDojo-PROV corpora are fast enough to benchmark
 directly.
@@ -315,7 +315,7 @@ Expected output (light corpus):
 
 ```
 Mode        Input(MB)  Struct(MB)  Reduction%  vsMinify%  Lossless
-Light            2.37       0.651        72.5       66.4       yes
+Light            2.37       0.647        72.7       66.5       yes
 ```
 
 The **manuscript** figures are not generated here: they are produced in the
@@ -395,7 +395,7 @@ pytest test_generic_provjson.py
 ```
 
 To re-confirm the published numbers and end-to-end losslessness, run the
-benchmark on the OpenML *light* corpus (74 docs; obtain it as described under
+benchmark on the OpenML *light* corpus (72 graphs; obtain it as described under
 [Corpora](#corpora)):
 
 ```bash
